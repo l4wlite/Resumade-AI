@@ -11,6 +11,7 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -35,6 +36,9 @@ public class ExportServiceImpl implements ExportService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final TemplateEngine templateEngine;
+
+    @Value("${services.resume-url:http://localhost:9090}")
+    private String resumeServiceUrl;
 
     private static final String EXPORT_DIR = "exports/";
 
@@ -95,8 +99,8 @@ public class ExportServiceImpl implements ExportService {
             headers.set("X-User-Id", String.valueOf(job.getUserId()));
             HttpEntity<String> entity = new HttpEntity<>(headers);
             
-            ResponseEntity<String> response = restTemplate.exchange(
-                    "http://resume-service/api/v1/resumes/" + job.getResumeId(),
+                ResponseEntity<String> response = restTemplate.exchange(
+                    resumeServiceUrl + "/api/v1/resumes/" + job.getResumeId(),
                     HttpMethod.GET,
                     entity,
                     String.class

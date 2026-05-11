@@ -133,11 +133,10 @@ resumade
 
 ## Compatibility Notes
 
-- **Eureka removed**: No longer needed (single monolith)
 - **Inter-service HTTP calls**: Will need to be refactored to direct service injection
 - **Database connections**: All services use single connection pool to `resumade`
-- **RabbitMQ**: Event-driven communication preserved
-- **Redis**: Available for caching (auth service)
+- **RabbitMQ**: Removed; jobs and notifications run inline
+- **Redis**: Available for caching (auth module)
 
 ## Testing
 

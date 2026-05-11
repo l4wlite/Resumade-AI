@@ -1,28 +1,31 @@
 package com.resumade.notification.service;
 
-import com.resumade.notification.entity.Notification;
-import com.resumade.notification.repository.NotificationRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.client.RestTemplate;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.MimeMessageHelper;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import com.resumade.notification.entity.Notification;
+import com.resumade.notification.repository.NotificationRepository;
+
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
@@ -33,6 +36,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final JavaMailSender mailSender;
     private final RestTemplate restTemplate;
     private final TemplateEngine templateEngine;
+
+    @Value("${services.auth-url:http://localhost:9090}")
+    private String authServiceUrl;
 
     public NotificationServiceImpl(NotificationRepository repository, JavaMailSender mailSender, RestTemplate restTemplate, TemplateEngine templateEngine) {
         this.repository = repository;
@@ -91,7 +97,7 @@ public class NotificationServiceImpl implements NotificationService {
         
         List<Integer> userIds;
         try {
-            // Fetch users from auth-service
+            // Fetch users from auth endpoint
             String token = getAuthToken();
             HttpHeaders headers = new HttpHeaders();
             if (token != null) {
@@ -99,8 +105,8 @@ public class NotificationServiceImpl implements NotificationService {
             }
             
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            ResponseEntity<Map[]> response = restTemplate.exchange(
-                    "http://auth-service/api/v1/auth/admin/users",
+                ResponseEntity<Map[]> response = restTemplate.exchange(
+                    authServiceUrl + "/api/v1/auth/admin/users",
                     HttpMethod.GET,
                     entity,
                     Map[].class
@@ -121,7 +127,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            log.error("Failed to fetch users from auth-service: {}", e.getMessage());
+            log.error("Failed to fetch users from auth endpoint: {}", e.getMessage());
             // Fallback to existing users in repository as a last resort
             userIds = repository.findAll().stream()
                     .map(Notification::getRecipientId)

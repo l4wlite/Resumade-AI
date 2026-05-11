@@ -144,14 +144,13 @@ To migrate from the original microservices:
 3. Run monolith with `ddl-auto: create-drop` to generate fresh schema
 4. Migrate data using export scripts
 5. Update frontend API URLs to port 9090
-6. Update service discovery references to direct dependencies
+6. Update inter-service URLs to local endpoints
 
 ## Key Differences from Microservices
 
-- **HTTP Calls** → **Direct method injection**: Services now inject dependencies instead of making HTTP calls
+- **HTTP Calls** → **Local HTTP calls**: Services call local endpoints within the monolith
 - **Separate databases** → **Single database**: All entities in one DB
-- **Service discovery** → **No Eureka**: Direct spring-boot:run or JAR execution
-- **Inter-service messaging** → **RabbitMQ**: Event-driven communication preserved
+- **Inter-service messaging** → **In-process**: No message broker required
 
 ## Deployment
 
@@ -181,7 +180,7 @@ logging:
 
 ## Notes
 
-- SecurityConfig from auth-service applies globally for JWT validation
-- RabbitMQ configuration consolidated from all services
-- Redis caching available for auth service use
+- SecurityConfig from auth module applies globally for JWT validation
+- Messaging runs inline; no broker required
+- Redis caching available for auth module use
 - Email notifications via Spring Mail with SMTP

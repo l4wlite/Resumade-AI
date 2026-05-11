@@ -27,16 +27,13 @@ public class AiServiceImpl implements AiService {
 
     private final AiRequestRepository repository;
     private final WebClient.Builder webClientBuilder;
-    private final WebClient.Builder loadBalancedWebClientBuilder;
     private final HttpServletRequest currentRequest;
     private final ObjectMapper objectMapper;
 
     public AiServiceImpl(AiRequestRepository repository, WebClient.Builder webClientBuilder,
-            WebClient.Builder loadBalancedWebClientBuilder,
             HttpServletRequest currentRequest, ObjectMapper objectMapper) {
         this.repository = repository;
         this.webClientBuilder = webClientBuilder;
-        this.loadBalancedWebClientBuilder = loadBalancedWebClientBuilder;
         this.currentRequest = currentRequest;
         this.objectMapper = objectMapper;
     }

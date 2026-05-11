@@ -1,10 +1,9 @@
 package com.resumade.jobmatch.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.resumade.jobmatch.entity.JobMatch;
-import com.resumade.jobmatch.repository.JobMatchRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.resumade.jobmatch.entity.JobMatch;
+import com.resumade.jobmatch.repository.JobMatchRepository;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 public class JobMatchServiceImpl implements JobMatchService {
@@ -25,7 +25,6 @@ public class JobMatchServiceImpl implements JobMatchService {
 
     private final JobMatchRepository repository;
     private final WebClient.Builder webClientBuilder;
-    private final WebClient.Builder loadBalancedWebClientBuilder;
     private final ObjectMapper objectMapper;
 
     @Value("${jooble.api-key}")
@@ -34,7 +33,7 @@ public class JobMatchServiceImpl implements JobMatchService {
     @Value("${ai.gemini.api-key}")
     private String geminiKey;
 
-    @Value("${services.resume-url:http://resume-service}")
+    @Value("${services.resume-url:http://localhost:9090}")
     private String resumeServiceUrl;
 
     @Value("${ai.gemini.model:gemini-2.5-flash}")
@@ -42,11 +41,9 @@ public class JobMatchServiceImpl implements JobMatchService {
 
     public JobMatchServiceImpl(JobMatchRepository repository,
             WebClient.Builder webClientBuilder,
-            WebClient.Builder loadBalancedWebClientBuilder,
             ObjectMapper objectMapper) {
         this.repository = repository;
         this.webClientBuilder = webClientBuilder;
-        this.loadBalancedWebClientBuilder = loadBalancedWebClientBuilder;
         this.objectMapper = objectMapper;
     }
 
@@ -218,8 +215,8 @@ public class JobMatchServiceImpl implements JobMatchService {
 
     private String fetchResumeContent(Integer resumeId, String authToken) {
         try {
-            log.info("Fetching resume content for resumeId: {} from resume-service", resumeId);
-            Map resumeData = loadBalancedWebClientBuilder.build()
+                log.info("Fetching resume content for resumeId: {} from resume endpoint", resumeId);
+                Map resumeData = webClientBuilder.build()
                     .get()
                     .uri(resumeServiceUrl + "/api/v1/resumes/" + resumeId)
                     .header("Authorization", "Bearer " + authToken)
