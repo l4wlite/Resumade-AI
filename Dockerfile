@@ -6,8 +6,6 @@ WORKDIR /workspace
 
 # Copy Maven files and download dependencies (leverages Docker cache)
 COPY pom.xml mvnw mvnw.cmd ./
-COPY .mvn .mvn
-
 # Copy source and build
 COPY src ./src
 RUN mvn -B -DskipTests clean package
