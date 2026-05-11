@@ -22,11 +22,6 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: 587
@@ -74,18 +69,6 @@ services:
 
 export:
   enabled: true
-  queue:
-    name: export.queue
-    exchange: export.exchange
-    routing-key: export.routing.key
-  notifications:
-    queue: notification.queue
-
-notification:
-  enabled: true
-  queue: notification.queue
-  exchange: notification-exchange
-  routing-key: notification-routing-key
 
 jobmatch:
   enabled: true

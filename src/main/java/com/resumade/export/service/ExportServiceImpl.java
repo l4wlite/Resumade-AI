@@ -1,34 +1,30 @@
 package com.resumade.export.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
-import org.xhtmlrenderer.pdf.ITextRenderer;
-import com.resumade.export.dto.ExportJobMessage;
-import com.resumade.export.entity.ExportJob;
-import com.resumade.export.repository.ExportRepository;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.xhtmlrenderer.pdf.ITextRenderer;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.resumade.export.entity.ExportJob;
+import com.resumade.export.repository.ExportRepository;
 
 @Service
 public class ExportServiceImpl implements ExportService {
@@ -36,22 +32,14 @@ public class ExportServiceImpl implements ExportService {
     private static final Logger log = LoggerFactory.getLogger(ExportServiceImpl.class);
 
     private final ExportRepository repository;
-    private final RabbitTemplate rabbitTemplate;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final TemplateEngine templateEngine;
 
-    @Value("${export.queue.exchange}")
-    private String exchange;
-
-    @Value("${export.queue.routing-key}")
-    private String routingKey;
-
     private static final String EXPORT_DIR = "exports/";
 
-    public ExportServiceImpl(ExportRepository repository, RabbitTemplate rabbitTemplate, RestTemplate restTemplate, ObjectMapper objectMapper, TemplateEngine templateEngine) {
+    public ExportServiceImpl(ExportRepository repository, RestTemplate restTemplate, ObjectMapper objectMapper, TemplateEngine templateEngine) {
         this.repository = repository;
-        this.rabbitTemplate = rabbitTemplate;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.templateEngine = templateEngine;
@@ -74,10 +62,9 @@ public class ExportServiceImpl implements ExportService {
         job.setExpiresAt(LocalDateTime.now().plusDays(7));
         repository.save(job);
 
-        ExportJobMessage message = new ExportJobMessage(job.getJobId(), userId, resumeId, format);
-        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+        processExport(job.getJobId());
 
-        log.info("Export job created and queued: {}", job.getJobId());
+        log.info("Export job created and processed inline: {}", job.getJobId());
         return job;
     }
 
