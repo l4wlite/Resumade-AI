@@ -50,6 +50,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${google.oauth.client-id}")
     private String googleClientId;
 
+    @Value("${app.redis.enabled:true}")
+    private boolean redisEnabled;
+
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
             JwtService jwtService, AuthenticationManager authenticationManager,
             UserDetailsService userDetailsService, NotificationProducer notificationProducer,
@@ -260,8 +263,10 @@ public class AuthServiceImpl implements AuthService {
         if (token != null && token.startsWith("Bearer ")) {
             String jwt = token.substring(7);
             String email = jwtService.extractUsername(jwt);
-            redisTemplate.delete("JWT_TOKEN:" + email);
-            log.info("User logged out and token removed from Redis for: {}", email);
+            if (redisEnabled) {
+                redisTemplate.delete("JWT_TOKEN:" + email);
+                log.info("User logged out and token removed from Redis for: {}", email);
+            }
         }
     }
 
@@ -457,6 +462,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void saveTokenToRedis(String email, String token) {
+        if (!redisEnabled) {
+            return;
+        }
         // Store token with expiration (matching JWT expiration)
         redisTemplate.opsForValue().set(
             "JWT_TOKEN:" + email, 

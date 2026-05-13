@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +26,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
+
+    @Value("${app.redis.enabled:true}")
+    private boolean redisEnabled;
 
     public JwtAuthFilter(JwtService jwtService, UserDetailsService userDetailsService, org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate) {
         this.jwtService = jwtService;
@@ -52,11 +56,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                 
-                // Check if token exists in Redis and matches
-                String storedToken = redisTemplate.opsForValue().get("JWT_TOKEN:" + userEmail);
-                boolean isTokenInRedis = jwt.equals(storedToken);
+                boolean isTokenAllowed = true;
+                if (redisEnabled) {
+                    // When Redis is enabled, require a matching stored token
+                    String storedToken = redisTemplate.opsForValue().get("JWT_TOKEN:" + userEmail);
+                    isTokenAllowed = jwt.equals(storedToken);
+                }
 
-                if (jwtService.validateToken(jwt, userDetails) && isTokenInRedis) {
+                if (jwtService.validateToken(jwt, userDetails) && isTokenAllowed) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );

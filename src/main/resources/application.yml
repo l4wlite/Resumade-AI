@@ -38,6 +38,10 @@ spring:
   thymeleaf:
     check-template-location: false
 
+app:
+  redis:
+    enabled: ${REDIS_ENABLED:true}
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000
