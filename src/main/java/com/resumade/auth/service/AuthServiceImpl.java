@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -46,25 +45,19 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final NotificationProducer notificationProducer;
-    private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
     @Value("${google.oauth.client-id}")
     private String googleClientId;
 
-    @Value("${app.redis.enabled:false}")
-    private boolean redisEnabled;
-
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
             JwtService jwtService, AuthenticationManager authenticationManager,
-            UserDetailsService userDetailsService, NotificationProducer notificationProducer,
-            ObjectProvider<org.springframework.data.redis.core.RedisTemplate<String, String>> redisTemplateProvider) {
+            UserDetailsService userDetailsService, NotificationProducer notificationProducer) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.notificationProducer = notificationProducer;
-        this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
     @Override
@@ -113,9 +106,6 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails, user);
 
-        // Store token in Redis
-        saveTokenToRedis(user.getEmail(), token);
-
         return buildAuthResponse(token, user);
     }
 
@@ -136,9 +126,6 @@ public class AuthServiceImpl implements AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails, user);
-
-        // Store token in Redis
-        saveTokenToRedis(user.getEmail(), token);
 
         log.info("User logged in successfully: {}", user.getUserId());
         return buildAuthResponse(token, user);
@@ -214,9 +201,6 @@ public class AuthServiceImpl implements AuthService {
             UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
             String jwtToken = jwtService.generateToken(userDetails, user);
 
-            // Store token in Redis
-            saveTokenToRedis(user.getEmail(), jwtToken);
-
             log.info("Google login successful for user: {}", user.getUserId());
             return buildAuthResponse(jwtToken, user);
 
@@ -261,14 +245,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            String jwt = token.substring(7);
-            String email = jwtService.extractUsername(jwt);
-            if (redisEnabled && redisTemplate != null) {
-                redisTemplate.delete("JWT_TOKEN:" + email);
-                log.info("User logged out and token removed from Redis for: {}", email);
-            }
-        }
     }
 
     @Override
@@ -460,18 +436,6 @@ public class AuthServiceImpl implements AuthService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
         log.info("Password reset successfully for user: {}", user.getUserId());
-    }
-
-    private void saveTokenToRedis(String email, String token) {
-        if (!redisEnabled || redisTemplate == null) {
-            return;
-        }
-        // Store token with expiration (matching JWT expiration)
-        redisTemplate.opsForValue().set(
-            "JWT_TOKEN:" + email, 
-            token, 
-            java.time.Duration.ofMillis(86400000) // 24 hours
-        );
     }
 
     private AuthResponse buildAuthResponse(String token, User user) {
