@@ -40,7 +40,7 @@ spring:
 
 app:
   redis:
-    enabled: ${REDIS_ENABLED:true}
+    enabled: ${REDIS_ENABLED:false}
 
 jwt:
   secret: ${JWT_SECRET}
@@ -57,6 +57,9 @@ management:
     web:
       exposure:
         include: health,info
+  health:
+    redis:
+      enabled: ${REDIS_ENABLED:false}
 
 # Service Configurations
 auth:

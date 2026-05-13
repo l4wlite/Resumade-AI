@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,13 +28,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate;
 
-    @Value("${app.redis.enabled:true}")
+    @Value("${app.redis.enabled:false}")
     private boolean redisEnabled;
 
-    public JwtAuthFilter(JwtService jwtService, UserDetailsService userDetailsService, org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate) {
+    public JwtAuthFilter(JwtService jwtService, UserDetailsService userDetailsService, ObjectProvider<org.springframework.data.redis.core.RedisTemplate<String, String>> redisTemplateProvider) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
-        this.redisTemplate = redisTemplate;
+        this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                 
                 boolean isTokenAllowed = true;
-                if (redisEnabled) {
+                if (redisEnabled && redisTemplate != null) {
                     // When Redis is enabled, require a matching stored token
                     String storedToken = redisTemplate.opsForValue().get("JWT_TOKEN:" + userEmail);
                     isTokenAllowed = jwt.equals(storedToken);

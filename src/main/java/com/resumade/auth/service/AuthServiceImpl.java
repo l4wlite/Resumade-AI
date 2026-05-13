@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -50,20 +51,20 @@ public class AuthServiceImpl implements AuthService {
     @Value("${google.oauth.client-id}")
     private String googleClientId;
 
-    @Value("${app.redis.enabled:true}")
+    @Value("${app.redis.enabled:false}")
     private boolean redisEnabled;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
             JwtService jwtService, AuthenticationManager authenticationManager,
             UserDetailsService userDetailsService, NotificationProducer notificationProducer,
-            org.springframework.data.redis.core.RedisTemplate<String, String> redisTemplate) {
+            ObjectProvider<org.springframework.data.redis.core.RedisTemplate<String, String>> redisTemplateProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.notificationProducer = notificationProducer;
-        this.redisTemplate = redisTemplate;
+        this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
     @Override
@@ -263,7 +264,7 @@ public class AuthServiceImpl implements AuthService {
         if (token != null && token.startsWith("Bearer ")) {
             String jwt = token.substring(7);
             String email = jwtService.extractUsername(jwt);
-            if (redisEnabled) {
+            if (redisEnabled && redisTemplate != null) {
                 redisTemplate.delete("JWT_TOKEN:" + email);
                 log.info("User logged out and token removed from Redis for: {}", email);
             }
@@ -462,7 +463,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void saveTokenToRedis(String email, String token) {
-        if (!redisEnabled) {
+        if (!redisEnabled || redisTemplate == null) {
             return;
         }
         // Store token with expiration (matching JWT expiration)
