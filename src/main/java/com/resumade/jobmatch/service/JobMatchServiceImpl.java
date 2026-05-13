@@ -36,8 +36,11 @@ public class JobMatchServiceImpl implements JobMatchService {
     @Value("${services.resume-url:http://localhost:9090}")
     private String resumeServiceUrl;
 
-    @Value("${ai.gemini.model:gemini-2.5-flash}")
+    @Value("${ai.gemini.model:gemini-2.0-flash}")
     private String geminiModel;
+
+    @Value("${ai.gemini.base-url:https://generativelanguage.googleapis.com/v1}")
+    private String geminiBaseUrl;
 
     public JobMatchServiceImpl(JobMatchRepository repository,
             WebClient.Builder webClientBuilder,
@@ -281,8 +284,7 @@ public class JobMatchServiceImpl implements JobMatchService {
     }
 
     private String callGemini(String prompt) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + geminiModel + ":generateContent?key="
-                + geminiKey;
+        String url = geminiBaseUrl + "/models/" + geminiModel + ":generateContent?key=" + geminiKey;
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
                 "generationConfig", Map.of(

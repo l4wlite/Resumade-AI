@@ -1,11 +1,12 @@
 package com.resumade.resume.repository;
 
-import com.resumade.resume.entity.Resume;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.resumade.resume.entity.Resume;
 
 @Repository
 public interface ResumeRepository extends JpaRepository<Resume, Integer> {

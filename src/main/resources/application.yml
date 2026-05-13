@@ -59,8 +59,9 @@ ai:
   enabled: true
   gemini:
     api-key: ${GEMINI_API_KEY:empty-key}
-    model: ${AI_GEMINI_MODEL:gemini-1.5-flash}
-    fallback-model: ${AI_GEMINI_FALLBACK_MODEL:gemini-1.5-flash}
+    base-url: ${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1}
+    model: ${AI_GEMINI_MODEL:gemini-2.0-flash}
+    fallback-model: ${AI_GEMINI_FALLBACK_MODEL:gemini-1.5-flash-latest}
 
 services:
   resume-url: ${RESUME_SERVICE_URL:http://localhost:9090}

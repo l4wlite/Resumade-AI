@@ -51,11 +51,14 @@ public class AiServiceImpl implements AiService {
     @Value("${ai.gemini.api-key}")
     private String geminiKey;
 
-    @Value("${ai.gemini.model:gemini-1.5-flash}")
+    @Value("${ai.gemini.model:gemini-2.0-flash}")
     private String geminiModel;
 
     @Value("${ai.gemini.fallback-model:}")
     private String geminiFallbackModel;
+
+    @Value("${ai.gemini.base-url:https://generativelanguage.googleapis.com/v1}")
+    private String geminiBaseUrl;
 
     @Override
     public String generateSummary(Integer userId, Integer resumeId, String jobTitle, int yearsExp) {
@@ -331,8 +334,7 @@ public class AiServiceImpl implements AiService {
     }
 
     private String callGeminiWithModel(String model, String promptText, double temperature) {
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key="
-                + geminiKey;
+        String url = geminiBaseUrl + "/models/" + model + ":generateContent?key=" + geminiKey;
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(
